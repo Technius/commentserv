@@ -10,4 +10,12 @@ object CommentService {
     sql"select id, author, content from comments c where thread = $id"
       .query[Comment]
       .to[Seq]
+
+  def create(thread: ThreadId, user: UserId, content: String): ConnectionIO[Comment] =
+    sql"""
+    insert into comments (thread, author, content)
+    values ($thread, $user, $content)
+    """
+      .update
+      .withUniqueGeneratedKeys[Comment]("id", "author", "content")
 }

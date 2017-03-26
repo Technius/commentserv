@@ -19,7 +19,7 @@ class Routes(xa: Transactor[Task], sessionConfig: SessionConfig) extends TaskMar
 
   val threads =
     pathPrefix("threads") {
-      path(IntNumber) { id =>
+      pathPrefix(IntNumber) { id =>
         threadRoute(id)
       } ~
       post {
@@ -83,15 +83,40 @@ class Routes(xa: Transactor[Task], sessionConfig: SessionConfig) extends TaskMar
     }
 
   def threadRoute(id: ThreadId) =
-    complete {
-      val optt = for {
-        t <- OptionT(ThreadService.find(id))
-        comments <- OptionT.liftF(CommentService.list(id))
-      } yield (t, comments)
+    pathPrefix("comments") {
+      commentRoute(id)
+    } ~
+    get {
+      complete {
+        val optt = for {
+          t <- OptionT(ThreadService.find(id))
+          comments <- OptionT.liftF(CommentService.list(id))
+        } yield (t, comments)
 
-      optt.value.transact(xa) map {
-        case Some((thread, comments)) => ApiResponse.FoundThread(thread, comments)
-        case None => ApiResponse.ThreadNotFound(id)
+        optt.value.transact(xa) map {
+          case Some((thread, comments)) => ApiResponse.FoundThread(thread, comments)
+          case None => ApiResponse.ThreadNotFound(id)
+        }
+      }
+    }
+
+  def commentRoute(threadId: ThreadId) =
+    get {
+      complete {
+        CommentService.list(threadId)
+          .transact(xa)
+          .map(comments => ApiResponse.AllComments(threadId, comments))
+      }
+    } ~
+    post {
+      requiredSession(oneOff, usingCookies) { userId =>
+        parameters('content.as[String]) { content =>
+          complete {
+            CommentService.create(threadId, userId, content)
+              .transact(xa)
+              .map(ApiResponse.PostedComment.apply)
+          }
+        }
       }
     }
 }
