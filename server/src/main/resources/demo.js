@@ -109,7 +109,7 @@ var MyComponent = {
             m("p", loremIpsum),
             m("h2", "Comments"),
             m("ul", Data.comments.map(function(c) {
-                var name = Data.users[c.author] ? Data.users[c.author].loginName : "Loading...";
+                var name = Data.users[c.author] ? Data.users[c.author].username : "Loading...";
                 return m("li", name + " says " + c.content);
             })),
             m("div", registerBtn),

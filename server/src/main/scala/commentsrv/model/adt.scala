@@ -2,7 +2,7 @@ package commentserv.model
 
 import scala.collection.immutable.Seq
 
-case class User(id: UserId, loginName: String)
+case class User(id: UserId, loginName: String, username: String)
 
 case class Thread(id: ThreadId, title: String, slug: String)
 
