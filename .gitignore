@@ -1,0 +1,5 @@
+/**/target
+*.ensime*
+*.swp
+.DS_STORE
+*.class
