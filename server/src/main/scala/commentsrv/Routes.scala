@@ -44,9 +44,15 @@ class Routes(xa: Transactor[Task], sessionConfig: SessionConfig) extends TaskMar
     pathPrefix("auth") {
       path("register") {
         parameters('login_name.as[String], 'username.as[String]) { (loginName, username) =>
-          complete {
-            UserService.create(loginName, username)
-              .transact(xa).map(user => ApiResponse.Registered(user.id))
+          import scala.concurrent.ExecutionContext.Implicits.global //TODO stupid hack
+          val t = UserService.create(loginName, username)
+            .transact(xa)
+          onSuccess(t.unsafeRunAsyncFuture) { user =>
+            setSession(oneOff, usingCookies, user.id) {
+              complete {
+                ApiResponse.Registered(user.id)
+              }
+            }
           }
         }
       } ~
