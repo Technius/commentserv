@@ -28,8 +28,10 @@ lazy val server = (project in file("server")).
       akkaHttp,
       cats,
       fs2,
+      fs2Cats,
       doobie,
       postgres,
+      redisReact,
       scalaTest % Test,
       doobieScalatestCats % Test
     ),

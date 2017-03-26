@@ -6,6 +6,8 @@ import akka.http.scaladsl.Http
 import doobie.imports._
 import fs2.Task
 import scala.util.Success
+import scala.concurrent.duration._
+import com.redis.RedisClient
 
 object CommentservServer extends App {
   implicit val system = ActorSystem()
@@ -19,6 +21,8 @@ object CommentservServer extends App {
   val xa = DriverManagerTransactor[Task](
     "org.postgresql.Driver", s"jdbc:postgresql://localhost:5432/", "postgres", ""
   )
+
+  val redisClient = RedisClient("localhost", 6379)
   val routes = new Routes(xa)
 
   val bindFut = Http().bindAndHandle(routes.root, host, port)
@@ -30,6 +34,7 @@ object CommentservServer extends App {
   if (io.Source.stdin.hasNext) {
     io.StdIn.readLine()
     println("Shutting down server...")
+    redisClient.quit()(akka.util.Timeout(5.seconds))
     system.terminate()
   }
 }
