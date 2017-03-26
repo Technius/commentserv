@@ -99,8 +99,9 @@ var MyComponent = {
             });
         }}, "Register");
         var postBtn = m("button", {onclick: function() {
-            postComment(1, Data.commentField).then(function() {
+            postComment(1, Data.commentField).then(function(response) {
                 Data.commentField = "";
+                Data.comments.push(response.comment);
             });
         }}, "Post Comment");
         return m("div", [
