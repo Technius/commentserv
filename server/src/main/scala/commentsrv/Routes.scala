@@ -18,6 +18,12 @@ class Routes(xa: Transactor[Task], sessionConfig: SessionConfig) extends TaskMar
   def root = threads
 
   val threads =
+    path("demo") {
+      getFromFile("src/main/resources/demo.html")
+    } ~
+    path("demo.js") {
+      getFromFile("src/main/resources/demo.js")
+    }~
     pathPrefix("threads") {
       pathPrefix(IntNumber) { id =>
         threadRoute(id)
@@ -80,6 +86,16 @@ class Routes(xa: Transactor[Task], sessionConfig: SessionConfig) extends TaskMar
           }
         }
       }
+    } ~
+    pathPrefix("users") {
+      pathPrefix(IntNumber) { userId =>
+        val task = UserService.findById(userId).transact(xa)
+        import scala.concurrent.ExecutionContext.Implicits.global
+        onSuccess(task.unsafeRunAsyncFuture) {
+          case Some(user) => userRoute(user)
+          case None => complete(ApiResponse.UserNotFound(userId))
+        }
+      }
     }
 
   def threadRoute(id: ThreadId) =
@@ -117,6 +133,13 @@ class Routes(xa: Transactor[Task], sessionConfig: SessionConfig) extends TaskMar
               .map(ApiResponse.PostedComment.apply)
           }
         }
+      }
+    }
+
+  def userRoute(user: User) =
+    get {
+      complete {
+        ApiResponse.FoundUser(user)
       }
     }
 }

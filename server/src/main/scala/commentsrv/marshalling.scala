@@ -19,10 +19,12 @@ trait ApiResponseMarshalling {
   import ApiResponse._
   def getStatusCode(r: ApiResponse): StatusCode = r match {
     case _: AllThreads => StatusCodes.OK
-    case _: FoundThread => StatusCodes.OK
     case _: AllComments => StatusCodes.OK
+    case _: FoundThread => StatusCodes.OK
+    case _: FoundUser => StatusCodes.OK
     case _: CommentNotFound => StatusCodes.NotFound
     case _: ThreadNotFound => StatusCodes.NotFound
+    case _: UserNotFound => StatusCodes.NotFound
     case _: CreatedThread => StatusCodes.Created
     case _: UserAlreadyExists => StatusCodes.BadRequest
     case _: Registered => StatusCodes.Created
