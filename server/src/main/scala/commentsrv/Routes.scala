@@ -1,16 +1,20 @@
 package commentserv
 
+import com.softwaremill.session.{ SessionConfig, SessionManager }
+import com.softwaremill.session.SessionDirectives._
+import com.softwaremill.session.SessionOptions._
 import cats.implicits._
 import cats.data.OptionT
 import doobie.imports._
-import akka.http.scaladsl.marshalling._
 import akka.http.scaladsl.server.Directives._
 import fs2.Task
 
 import service._
 import model._
 
-class Routes(xa: Transactor[Task]) extends TaskMarshalling with ApiResponseMarshalling {
+class Routes(xa: Transactor[Task], sessionConfig: SessionConfig) extends TaskMarshalling with ApiResponseMarshalling {
+  implicit val sessionManager = new SessionManager[UserId](sessionConfig)
+
   def root = threads
 
   val threads =
@@ -30,6 +34,52 @@ class Routes(xa: Transactor[Task]) extends TaskMarshalling with ApiResponseMarsh
           ThreadService.list.transact(xa).map(ApiResponse.AllThreads.apply)
         }
       }
+    } ~
+    pathPrefix("auth") {
+      path("register") {
+        parameters('login_name.as[String], 'username.as[String]) { (loginName, username) =>
+          complete {
+            UserService.create(loginName, username)
+              .transact(xa).map(user => ApiResponse.Registered(user.id))
+          }
+        }
+      } ~
+      path("login") {
+        post {
+          parameters('login_name.as[String]) { (loginName) =>
+            val optt = for {
+              user <- OptionT(UserService.find(loginName))
+            } yield user
+
+            import scala.concurrent.ExecutionContext.Implicits.global //TODO stupid hack
+            onSuccess(optt.value.transact(xa).unsafeRunAsyncFuture) {
+              case Some(user) =>
+                setSession(oneOff, usingCookies, user.id) {
+                  complete {
+                    ApiResponse.LoggedIn
+                  }
+                }
+              case _ =>
+                  complete(ApiResponse.AuthenticationFailure)
+            }
+          }
+        }
+      } ~
+      path("check") {
+        requiredSession(oneOff, usingCookies) { userId =>
+          complete("Yup")
+        } ~
+        complete("Nope")
+      } ~
+      path("logout") {
+        requiredSession(oneOff, usingCookies) { userId =>
+          invalidateSession(oneOff, usingCookies) {
+            complete {
+              ApiResponse.LoggedOut
+            }
+          }
+        }
+      }
     }
 
   def threadRoute(id: ThreadId) =
@@ -44,33 +94,5 @@ class Routes(xa: Transactor[Task]) extends TaskMarshalling with ApiResponseMarsh
         case None => ApiResponse.ThreadNotFound(id)
       }
     }
-
 }
 
-trait ApiResponseMarshalling {
-  import upickle.default.write
-  import akka.http.scaladsl.model.{ MediaTypes, StatusCodes, StatusCode }
-  implicit def apiResponseTEM: ToEntityMarshaller[ApiResponse] =
-    Marshaller.StringMarshaller.wrap(MediaTypes.`application/json`)(write(_)(ApiResponse.readWriter))
-
-  implicit def apiResponseTRM: ToResponseMarshaller[ApiResponse] =
-    Marshaller
-      .fromStatusCodeAndHeadersAndValue(apiResponseTEM)
-      .compose(r => (getStatusCode(r), List.empty, r))
-
-  import ApiResponse._
-  def getStatusCode(r: ApiResponse): StatusCode = r match {
-    case _: AllThreads => StatusCodes.OK
-    case _: FoundThread => StatusCodes.OK
-    case _: FoundComment => StatusCodes.OK
-    case _: CommentNotFound => StatusCodes.NotFound
-    case _: ThreadNotFound => StatusCodes.NotFound
-    case _: CreatedThread => StatusCodes.Created
-  }
-}
-
-trait TaskMarshalling {
-  implicit def taskMarshaller[A,B](implicit m: Marshaller[A, B]): Marshaller[Task[A], B] =
-    Marshaller(implicit ec => task => task.unsafeRunAsyncFuture().flatMap(m(_)))
-}
-object TaskMarshalling extends TaskMarshalling

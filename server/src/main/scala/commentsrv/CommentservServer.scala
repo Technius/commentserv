@@ -3,6 +3,7 @@ package commentserv
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.http.scaladsl.Http
+import com.softwaremill.session.{ SessionConfig, SessionUtil }
 import doobie.imports._
 import fs2.Task
 import scala.util.Success
@@ -23,7 +24,8 @@ object CommentservServer extends App {
   )
 
   val redisClient = RedisClient("localhost", 6379)
-  val routes = new Routes(xa)
+  val sessionConfig = SessionConfig.default(SessionUtil.randomServerSecret())
+  val routes = new Routes(xa, sessionConfig)
 
   val bindFut = Http().bindAndHandle(routes.root, host, port)
   bindFut onComplete {

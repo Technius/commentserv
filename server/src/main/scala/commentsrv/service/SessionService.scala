@@ -22,7 +22,7 @@ object SessionService {
   }
 
   def login(userId: UserId): Action[Unit] = wrap {
-    put("sessiondata-" + userId, Session())
+    put("sessiondata-" + userId, Session(userId))
   }
 
   def checkLogin(userId: UserId): Action[Boolean] = wrap {

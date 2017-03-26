@@ -1,3 +1,9 @@
+create table users (
+       id serial primary key,
+       login_name text unique not null,
+       username text not null
+);
+
 create table threads (
        id serial primary key,
        title text not null,

@@ -26,6 +26,7 @@ lazy val server = (project in file("server")).
     libraryDependencies ++= Seq(
       upickle,
       akkaHttp,
+      akkaHttpSession,
       cats,
       fs2,
       fs2Cats,

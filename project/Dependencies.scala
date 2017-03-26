@@ -3,6 +3,7 @@ import sbt._
 object Dependencies {
   lazy val scalaTest = "org.scalatest" %% "scalatest" % "3.0.1"
   lazy val akkaHttp = "com.typesafe.akka" %% "akka-http" % "10.0.5"
+  lazy val akkaHttpSession = "com.softwaremill.akka-http-session" %% "core" % "0.4.0"
   lazy val cats = "org.typelevel" %% "cats" % "0.9.0"
   lazy val fs2 = "co.fs2" %% "fs2-core" % "0.9.4"
   lazy val fs2Cats = "co.fs2" %% "fs2-cats" % "0.3.0"

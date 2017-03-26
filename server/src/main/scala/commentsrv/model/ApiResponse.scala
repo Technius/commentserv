@@ -13,5 +13,11 @@ object ApiResponse {
   case class CommentNotFound(id: ThreadId) extends ApiResponse
   case class ThreadNotFound(id: ThreadId) extends ApiResponse
 
+  case class Registered(user: UserId) extends ApiResponse
+  case class UserAlreadyExists(loginName: String) extends ApiResponse
+  case object LoggedIn extends ApiResponse
+  case object LoggedOut extends ApiResponse
+  case object AuthenticationFailure extends ApiResponse
+
   implicit val readWriter: ReadWriter[ApiResponse] = macroRW[ApiResponse]
 }
