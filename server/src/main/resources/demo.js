@@ -44,6 +44,19 @@ function login(loginName) {
     });
 }
 
+function register(loginName, username) {
+    var params = m.buildQueryString({
+        login_name: loginName,
+        username: username
+    });
+    return m.request({
+        url: "/auth/register?" + params,
+        method: "POST"
+    }).then(function(response) {
+        return response.user;
+    });
+}
+
 function logout() {
     return m.request({
         url: "/auth/logout"
@@ -76,6 +89,15 @@ var MyComponent = {
                 Data.commentField = t;
             })
         });
+        var registerBtn = m("button", {onclick: function() {
+            var loginName = window.prompt("Please enter your login name");
+            if (!loginName) return;
+            var username = window.prompt("Please enter your username");
+            if (!username) return;
+            register(loginName, username).then(function() {
+                alert("Registered!");
+            });
+        }}, "Register");
         var postBtn = m("button", {onclick: function() {
             postComment(1, Data.commentField).then(function() {
                 Data.commentField = "";
@@ -89,8 +111,11 @@ var MyComponent = {
                 var name = Data.users[c.author] ? Data.users[c.author].loginName : "Loading...";
                 return m("li", name + " says " + c.content);
             })),
-            commentInput,
-            postBtn
+            m("div", registerBtn),
+            m("div", [
+                commentInput,
+                postBtn
+            ])
         ]);
     }
 };
